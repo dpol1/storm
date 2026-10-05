@@ -361,11 +361,11 @@ public class SpoutExecutor extends Executor {
                 LOG.info("SPOUT Acking message {} {}", tupleInfo.getRootId(), tupleInfo.getMessageId());
             }
             Object traceContext = tupleInfo.getTraceContext();
-            long traceLatencyMs = traceContext != null ? Time.deltaMs(tupleInfo.getTraceEmitTimeMs()) : 0;
-            spout.ack(tupleInfo.getMessageId());
             if (traceContext != null) {
-                executor.getTupleTracer().spoutOutcome(taskId, traceContext, TupleTracer.Outcome.ACK, traceLatencyMs);
+                long latencyMs = Time.deltaMs(tupleInfo.getTraceEmitTimeMs());
+                executor.getTupleTracer().spoutOutcome(taskId, traceContext, TupleTracer.Outcome.ACK, latencyMs);
             }
+            spout.ack(tupleInfo.getMessageId());
             if (!taskData.getUserContext().getHooks().isEmpty()) { // avoid allocating SpoutAckInfo obj if not necessary
                 new SpoutAckInfo(tupleInfo.getMessageId(), taskId, timeDelta).applyOn(taskData.getUserContext());
             }
@@ -386,12 +386,12 @@ public class SpoutExecutor extends Executor {
                 LOG.info("SPOUT Failing {} : {} REASON: {}", tupleInfo.getRootId(), tupleInfo, reason);
             }
             Object traceContext = tupleInfo.getTraceContext();
-            long traceLatencyMs = traceContext != null ? Time.deltaMs(tupleInfo.getTraceEmitTimeMs()) : 0;
-            spout.fail(tupleInfo.getMessageId());
             if (traceContext != null) {
                 TupleTracer.Outcome outcome = "TIMEOUT".equals(reason) ? TupleTracer.Outcome.TIMEOUT : TupleTracer.Outcome.FAIL;
-                executor.getTupleTracer().spoutOutcome(taskId, traceContext, outcome, traceLatencyMs);
+                long latencyMs = Time.deltaMs(tupleInfo.getTraceEmitTimeMs());
+                executor.getTupleTracer().spoutOutcome(taskId, traceContext, outcome, latencyMs);
             }
+            spout.fail(tupleInfo.getMessageId());
             new SpoutFailInfo(tupleInfo.getMessageId(), taskId, timeDelta).applyOn(taskData.getUserContext());
             if (timeDelta != null) {
                 executor.getStats().spoutFailedTuple(tupleInfo.getStream());
